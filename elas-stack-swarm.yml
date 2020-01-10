@@ -1,0 +1,95 @@
+version: "3.7"
+services:
+  tms-logstash:
+    image: docker.elastic.co/logstash/logstash:7.5.1
+    ports:
+    - 5044:5044
+    - 5045:5045
+    deploy:
+      replicas: 1
+    configs:
+    - source: pipline
+      target: /usr/share/logstash/config/pipelines.yml
+    - source: new-tms-logstash
+      target: /usr/share/logstash/pipeline/new-tms.yml
+    - source: old-tms-logstash
+      target: /usr/share/logstash/pipeline/old-tms.yml
+  
+##elasticsearch
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+    environment:
+      - node.name=es01
+      - discovery.seed_hosts=es02
+      - cluster.initial_master_nodes=es01,es02
+      - cluster.name=docker-cluster
+#      - xpack.security.enabled=true
+#      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    volumes:
+      - /data/elas:/usr/share/elasticsearch/data
+     # - /data/elas/elastic-certificates.p12:/cert/elastic-certificates.p12
+    configs:
+    - source: elasticsearch
+      target: /usr/share/elasticsearch/config/elasticsearch.yml
+    - source: cert
+      target: /usr/share/elasticsearch/config/elastic-certificates.p12
+      mode : 0777
+    ports:
+      - 9200:9200
+ #   networks:
+ #     - esnet
+    deploy:
+      placement:
+        constraints: [node.hostname == elas1]
+
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+    environment:
+      - node.name=es02
+      - discovery.seed_hosts=es01
+      - cluster.initial_master_nodes=es01,es02
+      - cluster.name=docker-cluster
+#      - xpack.security.enabled=true
+#      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    volumes:
+      - /data/elas:/usr/share/elasticsearch/data
+    #  - /data/elas/elastic-certificates.p12:/cert/elastic-certificates.p12
+    configs:
+    - source: elasticsearch
+      target: /usr/share/elasticsearch/config/elasticsearch.yml
+  
+    - source: cert
+      target: /usr/share/elasticsearch/config/elastic-certificates.p12
+      mode: 0777
+    deploy:
+      placement:
+        constraints: [node.hostname == elas2]
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.5.1
+    environment:
+      ELASTICSEARCH_HOSTS: http://es01:9200
+    ports:
+      - 8080:5601
+    configs:
+    - source: kibana
+      target: /usr/share/kibana/config/kibana.yml
+  #  networks:
+  #    - esnet
+
+##config
+configs:
+  pipline:
+    file: ./config/pipelines.yml
+  new-tms-logstash:
+    file: ./config/new-tms-logstash.conf
+  old-tms-logstash:
+    file: ./config/old-tms-logstash.conf
+  elasticsearch:
+    file: ./config/elasticsearch.yml
+  kibana:
+    file: ./config/kibana.yml
+  cert:
+    file: ./config/elastic-certificates.p12

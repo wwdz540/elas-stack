@@ -1,0 +1,19 @@
+version: "3.7"
+services:
+  tms-logstash:
+    image: docker.elastic.co/logstash/logstash:7.4.0
+    ports:
+    - 5044:5044
+    - 5045:5045
+    deploy:
+      replicas: 1
+    configs:
+    - source: new-tms-logstash
+      target: /usr/share/logstash/pipeline/new-tms.yml
+    - source: old-tms-logstash
+      target: /usr/share/logstash/pipeline/old-tms.yml
+configs:
+  new-tms-logstash:
+    file: ./config/new-tms-logstash.conf
+  old-tms-logstash:
+    file: ./config/old-tms-logstash.conf

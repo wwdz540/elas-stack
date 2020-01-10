@@ -1,0 +1,4 @@
+- pipeline.id: new-rms
+  path.config: "/usr/share/logstash/pipeline/new-tms.yml" #新平台包括rms的日志配置
+- pipeline.id: old-rms
+  path.config: "/usr/share/logstash/pipeline/old-tms.yml" #新平台包括rms的日志配置
